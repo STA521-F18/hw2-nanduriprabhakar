@@ -1,6 +1,6 @@
 ---
 title: "HW2 STA521 Fall18"
-author: '[Your Name Here, netid and github username here]'
+author: 'Prabhakar Nanduri || Netid: pnn2 || github username: nanduriprabhakar '
 date: "Due September 23, 2018 5pm"
 output:
   pdf_document: default
@@ -15,6 +15,10 @@ Readings: Chapters 3-4 in Weisberg Applied Linear Regression
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(knitr)
+library(dplyr)
+library(GGally)
+library(ggplot2)
 ```
 
 This exercise involves the UN data set from `alr3` package. Install `alr3` and the `car` packages and load the data to answer the following questions adding your code in the code chunks.  Please add appropriate code to the chunks to suppress messages and warnings as needed once you are sure the code is working properly and remove instructions if no longer needed. Figures should have informative captions. Please switch the output to pdf for your final version to upload to Sakai. **Remove these instructions for final submission**
@@ -24,7 +28,7 @@ This exercise involves the UN data set from `alr3` package. Install `alr3` and t
 
 0.  Preliminary read in the data.  After testing, modify the code chunk so that output, messages and warnings are suppressed.  *Exclude text from final*
 
-```{r data}
+```{r data, echo=FALSE}
 library(alr3)
 data(UN3, package="alr3")
 help(UN3) 
@@ -35,13 +39,51 @@ library(car)
 1. Create a summary of the data.  How many variables have missing data?  Which are quantitative and which are qualtitative?
 
 ```{r}
-
+colnames(UN3)
+summary(UN3)
 ```
+
+```{r}
+glimpse(UN3)
+```
+
+
+The data-set totally consists of 7 variables of which 6 of them viz, [ModernC, Change, PPgdp, Frate, Pop, Fertility] have missing values. All the 7 variables are quantitative variables. 
 
 2. What is the mean and standard deviation of each quantitative predictor?  Provide in a nicely formatted table.
 
 ```{r}
+# While calculating the mean and standard deviation of the quantitative predictor, we remove the NA values so that it does not affect measures of central tendency calculations.
+ModernC_mean = mean(UN3$ModernC, na.rm = TRUE) 
+ModernC_std = sd(UN3$ModernC, na.rm = TRUE)
+Change_mean = mean(UN3$Change, na.rm = TRUE)
+Change_std = sd(UN3$Change, na.rm = TRUE)
+PPgdp_mean = mean(UN3$PPgdp, na.rm = TRUE)
+PPgdp_std = sd(UN3$PPgdp, na.rm = TRUE)
+Frate_mean = mean(UN3$Frate, na.rm = TRUE)
+Frate_std = sd(UN3$Frate, na.rm = TRUE)
+Pop_mean = mean(UN3$Pop, na.rm = TRUE)
+Pop_std = sd(UN3$Pop, na.rm = TRUE)
+Fertility_mean = mean(UN3$Fertility, na.rm = TRUE)
+Fertility_std = sd(UN3$Fertility, na.rm = TRUE)
+Purban_mean = mean(UN3$Purban, na.rm = TRUE)
+Purban_std = sd(UN3$Purban, na.rm = TRUE)
 
+df=data.frame(matrix(nrow=0,ncol=3))
+ModernC_df=c("ModernC",ModernC_mean,ModernC_std)
+Change_df=c("Change",Change_mean,Change_std)
+PPgdp_df=c("PPgdp",PPgdp_mean,PPgdp_std)
+Frate_df=c("Frate",Frate_mean,Frate_std)
+Pop_df=c("Pop",Pop_mean,Pop_std)
+Fertility_df=c("Fertility",Fertility_mean,Fertility_std)
+Purban_df=c("Purban",Purban_mean,Purban_std)
+
+df=rbind(df,ModernC_df,Change_df,PPgdp_df,Frate_df,Pop_df,Fertility_df,Purban_df)
+
+x=c("variable name","mean", "standard_deviation")
+colnames(df)=x
+kable(df)
+  
 ```
 
 
@@ -49,22 +91,42 @@ library(car)
 highlighting the relationships among the predictors. Comment
 on your findings regarding trying to predict `ModernC` from the other variables.  Are there potential outliers, nonlinear relationships or transformations that appear to be needed based on your graphical EDA?
 
-```{r}
 
+```{r}
+UN3_cleaned = na.omit(UN3)
+summary(UN3_cleaned)
+glimpse(UN3_cleaned)
 ```
+
+
+```{r}
+ggpairs(UN3, columns=c(1,2,3))
+```
+
+```{r}
+ggpairs(UN3_cleaned, columns = c(1,2,3))
+```
+
 
 ## Model Fitting
 
 4.  Use the `lm()` function to perform a multiple linear regression with `ModernC` as the response and all other variables as the predictors, using the formula `ModernC ~ .`, where the `.` includes all remaining variables in the dataframe.  Create  diagnostic residual plot from the linear model object and comment on results regarding assumptions.  How many observations are used in your model fitting?
 
 ```{r}
-
+modernc.lm=lm(ModernC ~ ., data = UN3)
+summary(modernc.lm)
 ```
+```{r}
+par(mfrow=c(2,2))
+plot(modernc.lm, ask=FALSE)
+```
+
+
 
 5. Examine added variable plots `car::avPlot` or `car::avPlots`  for your model above. Are there any plots that suggest that transformations are needed for any of the terms in the model? Describe. Is it likely that any of the localities are influential for any of the terms?  Which localities?  Which terms?  
 
 ```{r}
-
+car::avPlots(lm(ModernC ~ ., data = UN3))
 ```
 
 6.  Using the Box-Tidwell  `car::boxTidwell` or graphical methods find appropriate transformations of the predictor variables to be used as predictors in the linear model.  If any predictors are negative, you may need to transform so that they are non-negative.  Describe your method and  the resulting transformations.
