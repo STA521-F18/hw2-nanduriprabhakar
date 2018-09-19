@@ -13,7 +13,7 @@ output:
 Readings: Chapters 3-4 in Weisberg Applied Linear Regression
 
 
-```{r setup, include=FALSE}
+```{r setup, include=FALSE, options(warn=-1, message=-1)}
 knitr::opts_chunk$set(echo = TRUE)
 library(knitr)
 library(dplyr)
@@ -92,20 +92,11 @@ highlighting the relationships among the predictors. Comment
 on your findings regarding trying to predict `ModernC` from the other variables.  Are there potential outliers, nonlinear relationships or transformations that appear to be needed based on your graphical EDA?
 
 
-```{r}
-UN3_cleaned = na.omit(UN3)
-summary(UN3_cleaned)
-glimpse(UN3_cleaned)
-```
-
 
 ```{r}
 ggpairs(UN3, columns=c(1,2,3))
 ```
 
-```{r}
-ggpairs(UN3_cleaned, columns = c(1,2,3))
-```
 
 
 ## Model Fitting
@@ -133,13 +124,20 @@ car::avPlots(lm(ModernC ~ ., data = UN3))
 
 
 ```{r}
+# car::boxTidwell(ModernC ~ Pop ,  ~PPgdp + Change +  Frate + Fertility + Purban  , data = UN3 )
+car::boxTidwell(ModernC ~ Pop+PPgdp ,  ~ Change +  Frate + Fertility + Purban  , data = UN3 )
 
 ```
+
+
+
 
 7. Given the selected transformations of the predictors, select a transformation of the response using `MASS::boxcox` or `car::boxCox` and justify.
 
 
 ```{r}
+test = lm(ModernC ~ sqrt(Pop) + log(PPgdp) + Change + Frate + Fertility + Purban, data = UN3)
+car::boxCox(test)
 
 ```
 
