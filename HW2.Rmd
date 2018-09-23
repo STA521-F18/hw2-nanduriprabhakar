@@ -1,19 +1,15 @@
 ---
 title: "HW2 STA521 Fall18"
 author: 'Prabhakar Nanduri || Netid: pnn2 || github username: nanduriprabhakar '
-date: "Due September 23, 2018 5pm"
+date: "September 23, 2018"
 output:
   pdf_document: default
   html_document:
     df_print: paged
 ---
 
-## Backgound Reading
 
-Readings: Chapters 3-4 in Weisberg Applied Linear Regression
-
-
-```{r setup, include=FALSE, options(warn=-1, message=-1)}
+```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(knitr)
 library(dplyr)
@@ -21,12 +17,7 @@ library(GGally)
 library(ggplot2)
 ```
 
-This exercise involves the UN data set from `alr3` package. Install `alr3` and the `car` packages and load the data to answer the following questions adding your code in the code chunks.  Please add appropriate code to the chunks to suppress messages and warnings as needed once you are sure the code is working properly and remove instructions if no longer needed. Figures should have informative captions. Please switch the output to pdf for your final version to upload to Sakai. **Remove these instructions for final submission**
-
-
 ## Exploratory Data Analysis
-
-0.  Preliminary read in the data.  After testing, modify the code chunk so that output, messages and warnings are suppressed.  *Exclude text from final*
 
 ```{r data, echo=FALSE}
 library(alr3)
@@ -35,25 +26,21 @@ help(UN3)
 library(car)
 ```
 
-
-1. Create a summary of the data.  How many variables have missing data?  Which are quantitative and which are qualtitative?
+## Summary of the Data
 
 ```{r}
 colnames(UN3)
 summary(UN3)
-```
-
-```{r}
 glimpse(UN3)
 ```
 
+1)From the summary analysis of the dataset, all the variables are quantitative and all the variables expect for Purban [ie. ModernC, Change, PPgdp, Frate, Pop, Fertility] have missing values.  
 
-The data-set totally consists of 7 variables of which 6 of them viz, [ModernC, Change, PPgdp, Frate, Pop, Fertility] have missing values. All the 7 variables are quantitative variables. 
 
-2. What is the mean and standard deviation of each quantitative predictor?  Provide in a nicely formatted table.
+
+2)While calculating the mean and standard deviation of the quantitative predictors, we remove the NA values so that it does not affect measures of central tendency calculations.
 
 ```{r}
-# While calculating the mean and standard deviation of the quantitative predictor, we remove the NA values so that it does not affect measures of central tendency calculations.
 ModernC_mean = mean(UN3$ModernC, na.rm = TRUE) 
 ModernC_std = sd(UN3$ModernC, na.rm = TRUE)
 Change_mean = mean(UN3$Change, na.rm = TRUE)
@@ -87,92 +74,173 @@ kable(df)
 ```
 
 
-3. Investigate the predictors graphically, using scatterplots or other tools of your choice. Create some plots
-highlighting the relationships among the predictors. Comment
-on your findings regarding trying to predict `ModernC` from the other variables.  Are there potential outliers, nonlinear relationships or transformations that appear to be needed based on your graphical EDA?
 
+3)The pair-plots here all remove missing data individually for each predictor. 
 
-
-```{r}
-ggpairs(UN3, columns=c(1,2,3))
+```{r message = FALSE, warning = FALSE}
+ggpairs(UN3, columns=c(2,3,4,5,6,7,1))
 ```
 
+From the pair-plots, we see that there is a high correlation between 'Fertility' and 'Change' (0.814), which can be intuitively explained (since high fertility leads to high propulation growth rate). There seem to be outlier points in 'Pop' and 'Purban'. 
+The general distribution and scales of the predictors 'PPgdp' and 'Pop' seem to point towards taking their transformations. 
+Plotting 'ModernC' as a dependent variable across the other predictors, the above mentioned transformations seem more pragmatic. The correlation values of 'ModernC' with 'Pop' and 'Frate' are relatively low and thus might not give much information about 'ModernC'.
 
 
 ## Model Fitting
 
-4.  Use the `lm()` function to perform a multiple linear regression with `ModernC` as the response and all other variables as the predictors, using the formula `ModernC ~ .`, where the `.` includes all remaining variables in the dataframe.  Create  diagnostic residual plot from the linear model object and comment on results regarding assumptions.  How many observations are used in your model fitting?
 
+4)
 ```{r}
 modernc.lm=lm(ModernC ~ ., data = UN3)
 summary(modernc.lm)
 ```
+
+From the summary of the linear model displayed above; we understand that 85 observations were deleted due to missing values. Thus of the 210 data points only (210-85 = 125) 125 data points were used to fit the linear model. 
+
 ```{r}
 par(mfrow=c(2,2))
 plot(modernc.lm, ask=FALSE)
 ```
 
+For the linear model, from the residual plots we (more or less) see that the residuals are having a mean of zero with some constant variance. While we do not observe a perfect straight line, the overall trend is more or less centered around 0. 
 
+From the Q-Q plot, the assumption for ModernC being normally distributed doesnot completely hold true, since there seem to be a longer left tail(or a heavier right tail). 
 
-5. Examine added variable plots `car::avPlot` or `car::avPlots`  for your model above. Are there any plots that suggest that transformations are needed for any of the terms in the model? Describe. Is it likely that any of the localities are influential for any of the terms?  Which localities?  Which terms?  
+There do not seem to be influential outliers since none of the points have a cook's distance >[0.5 or 1], but the points of 'India' and 'China' do seem to be outliers nonetheless. 
+
+## Added Variable Plots
+
+5) 
 
 ```{r}
 car::avPlots(lm(ModernC ~ ., data = UN3))
 ```
 
-6.  Using the Box-Tidwell  `car::boxTidwell` or graphical methods find appropriate transformations of the predictor variables to be used as predictors in the linear model.  If any predictors are negative, you may need to transform so that they are non-negative.  Describe your method and  the resulting transformations.
+From the added variables plots above, it is evident that PPgdp and Pop might be needing some kind of transformations. [This can be deciphered from the scale of the axis and the slope steepness of the ModernC vs the 'particular variable' regression line]. While the plots for the Change and the Fertility variables do show steepness, the scale of the variables (in their units) do not intent for any transformations.
 
+
+## Transformations
+
+6)
 
 ```{r}
-# car::boxTidwell(ModernC ~ Pop ,  ~PPgdp + Change +  Frate + Fertility + Purban  , data = UN3 )
+
+car::boxTidwell(ModernC ~ Pop ,  ~ PPgdp + Change +  Frate + Fertility + Purban  , data = UN3 )
+```
+```{r}
 car::boxTidwell(ModernC ~ Pop+PPgdp ,  ~ Change +  Frate + Fertility + Purban  , data = UN3 )
 
 ```
 
+Running the boxTidwell plots for two cases (first with transformation only in the population variable and second with transformations for both the population and PPgdp variables), the second case seems to be more pragmatic in the approach (since in both the cases we would be taking the square root of the Pop variable) to variable transformation. {Taking the log of PPgdp variable can be understood by looking at the scale of the variable's units.}
 
 
-
-7. Given the selected transformations of the predictors, select a transformation of the response using `MASS::boxcox` or `car::boxCox` and justify.
-
+7)
 
 ```{r}
-test = lm(ModernC ~ sqrt(Pop) + log(PPgdp) + Change + Frate + Fertility + Purban, data = UN3)
-car::boxCox(test)
+# test1 = lm(ModernC ~ sqrt(Pop) + PPgdp + Change + Frate + Fertility + Purban, data = UN3)
+test2 = lm(ModernC ~ sqrt(Pop) + log(PPgdp) + Change + Frate + Fertility + Purban, data = UN3)
+car::boxCox(test2)
 
 ```
 
-8.  Fit the regression using the transformed variables.  Provide residual plots and added variables plots and comment.  If you feel that you need additional transformations of either the response or predictors, repeat any steps until you feel satisfied.
+Plotting the boxCox plot for the response variable, with a reasonable confidence (of the 95% interval) it can be said that the response variable does not need any transformation as such. The 95% confidence interval leans to lambda = 1, which is easier to interpret rather than taking the absolute value of lambda. Taking the trade-off for interpretability over model accuracy, no transformation for the response variable would be needed.
 
-9. Start by finding the best transformation of the response and then find transformations of the predictors.  Do you end up with a different model than in 8?
 
+## Model Fitting and Additional Transformations
+
+8)
+
+```{r}
+test2.lm = lm(ModernC ~ sqrt(Pop) + log(PPgdp) + Change + Frate + Fertility + Purban, data = UN3)
+summary(test2.lm)
+```
+
+```{r}
+par(mfrow=c(2,2))
+plot(test2.lm, ask=FALSE)
+```
+```{r}
+car::avPlots(test2.lm)
+```
+
+
+With the new linear model fitted against the two transformed variables; the residual plots now are more aligned towards the general assumptions of a linear regression model. The residuals mean is now more centered towards zero and the variance in the residuals is relatively more equally distributed. The Normal distributions Q-Q plots still show some deviation from the normal distribution of the residuals { being heavier on the right tail}, but much better off than the un-transformed variable residuals. From the AVplots there still seems to be some transformation possibility for sqrt(Pop) but additional transformations might lead to a loss of interpretability of the model and thus the additional transformations are being avoided.   
+
+
+9)
 
 ```{r}
 
+test_.lm = lm(ModernC ~ sqrt(sqrt(Pop)) + log(PPgdp) + Change + Frate + Fertility + Purban, data = UN3)
+summary(test_.lm)
+par(mfrow=c(2,2))
+plot(test_.lm, ask=FALSE)
+car::avPlots(test_.lm)
+
 ```
 
-10.  Are there any outliers or influential points in the data?  Explain.  If so, refit the model after removing any outliers and comment on residual plots.
+An attempt to take an additional sqrt of the (sqrt(Pop)) variable was done and the model was tried to fit. With interpretability of the model being a questionable issue,  the residual plots of the fit model showed much deviation from a normal-distribution behaviour(along with a minor loss in the R squared value). This transformation is then ruled out as a worse model than the one deduced in question 8
+
+Thus, after the various transformations of the predictors, the most pragmatic and interpretive friendly model is test2.lm = lm(ModernC ~ sqrt(Pop) + log(PPgdp) + Change + Frate + Fertility + Purban, data = UN3)
+
+
+## Removal of Outliers
+
+10)From the previous model analysis, the points pertaining to countries "India" and "China seem to be outliers. {They are not necessarily influential since their cook's distance is well below the threshold}
+
+Re-analyzing the model by taking out the two rows pertaining to China (row 39) and India (row 86)
+
+```{r}
+UN3_outliers_removed = UN3[-c(39,86),]
+```
 
 
 ```{r}
-
+test3.lm = lm(ModernC ~ sqrt(Pop) + log(PPgdp) + Change + Frate + Fertility + Purban, data = UN3_outliers_removed)
+summary(test3.lm)
 ```
+```{r}
+par(mfrow=c(2,2))
+plot(test3.lm, ask=FALSE)
+```
+
+
+Refitting the model after removing the outliers, the residual plots now are more evenly distributed along the mean (0) value. While there is a minor decrease in the 'R-square' value (decrease in model's ability to explain variance), the trade-off towards developing a model that is closer towards the assumptions is acceptable. The residuals vs. Leverage plots also show even distribution around the mean (0) line with no evident outliers/influential points.  
+
+
 
 ## Summary of Results
 
-11. For your final model, provide summaries of coefficients with 95% confidence intervals in a nice table with interpretations of each coefficient.  These should be in terms of the original units! 
+11)
 
 
 ```{r}
-
+kable(summary(test3.lm)$coeff, digits = c(3,3,3,3))
 ```
-
-
-12. Provide a paragraph summarizing your final model  and findings suitable for the US envoy to the UN after adjusting for outliers or influential points.   You should provide a justification for any case deletions in your final model
-
 
 ```{r}
-
+kable(confint(test3.lm), digits = c(3,3))
 ```
+
+From the regression model fit (post transformations and outlier removals), the interpretation of the coefficients can be summarized as below:-
+
+For the predictor variable (y) in its originial units (% of unmarried women using a modern method of contraception),
+-> An increase of population by 1000 members increase the % of unmarried women using modern methods of contraception{from now on referred to as just %} by (0.024)*1 = 0.024 % (approx. considering the base population levels are much, more higher than 1000 members) 
+-> An increase of per capita GDP (2001, USD values) by x units, increase the % by  5.183 * log(base-value + x / base-value) 
+-> An increase in annual population growth rate by 1% increases the % by 4.838%
+-> An increase in females overage 15 that are economically active by 1% increases the % by 0.182%.
+-> An increase in expected number of liver births per female by 1 unit decrease the % by 9.319%.
+-> An increase in urban population by 1% is expected to decrease the % by 0.029%. 
+
+
+
+## Model Summary Text
+
+12)From the data collect by the UN containing the national health, welfare and education statistics of 210 places, only 125 data points (data from only 125 places) have complete entries that could be used to build a linear model. The model tries to explain the relationship between The % 
+of unmarried women using modern methods of contraception to all the other macro economic factors viz. Annual population growth rate, Per capita GDP, place population, fertility of females and % of urban population. Two of the 125 data points(pertaining to India and China) have been removed from the model building exercise since they have extremely high population numbers which could result in wrong analysis. The model developed assumes that all the macro economic factors (with certain transformations for the factors of population and ppgdp) have a linear relationship with the predictor variable Y (% of women using modern methods of contraception). With this assumption, the model developed indicates that increase in population growth, per capita GDP, annual population growth rate, fertility rate; and decrease in Feritlity and urban population % increases the % of unmarries women using modern methods of contraception. {For exact changes and value estimates please see the interpretations of coeffients above}. 
+
+The limitations of the model developed pertains to lack of causality. The model can not explain whether one factor(predictor variable) leads to a change in the ModernC variable or vice-versa. The model only explains correlations observed and does not explain any cause and effect relationships. 
 
 
 ## Methodology
@@ -180,5 +248,56 @@ car::boxCox(test)
     
 13. Prove that the intercept in the added variable scatter plot will always be zero.  _Hint:  use the fact that if $H$ is the project matrix which contains a column of ones, then $1_n^T (I - H) = 0$.  Use this to show that the sample mean of residuals will always be zero if there is an intercept._
 
+A) We know the premise that 
+
+$$\hat{Y} = \hat{\beta_0} + \hat{\beta_1}.X$$
+
+Thus applying for the errors in $Y$ and $X$, we get
+
+$$ e_y = \hat{\beta_0} + \hat{\beta_1}.e_x $$
+
+we know, 
+
+$$ e_y=(I-H)Y $$
+and $$ e_x = (I-H)X $$
+
+Thus, we get,
+
+$$ (I-H)Y=\hat{\beta_0}+\hat{\beta_1} (I-H)X $$
+
+we know, 
+
+$$ \hat{\beta_1} = (X'.X)^{-1} X'.Y $$
+
+thus, 
+
+$$ (I-H)Y=\hat{\beta_0}+(X'X)^{-1}X'Y  (I-H)X $$ 
+we know,
+
+$$ X = (I - H). X_j $$
+
+simplifying further and rearranging the terms,
+
+$$(I-H)Y=\hat{\beta_0}+(((I-H)X_j)'(I-H)X_j)^{-1}((I-H)X_j)'Y(I-H)(I-H)X_j $$
+$$(I-H)Y=\hat{\beta}_0+(X_j'(I-H)'(I-H)X_j)^{-1}X_j'(I-H)'Y(I-H)(I-H)X_j$$
+$$  (I-H)Y=\hat{\beta}_0+(X_j'(I-H)X_j)^{-1}X_j'(I-H)'Y(I-H)X_j $$
+
+Note: We are using the property that $(I-H)$ is a diagonal and idempotent matrix.
+
+Now, multiplying both sides of the equation with $(X_j)'$, we get,
+
+$$ X_j'(I-H)Y=  X_j' \hat{\beta}_0 + X_j'(X_j'(I-H)X_j)^{-1} X_j'(I-H)'Y(I-H)X_j $$
+
+$$ X_j'(I-H)Y=  X_j' \hat{\beta}_0 + X_j'(I-H)X_j(X_j'(I-H)X_j)^{-1} X_j'(I-H)Y $$
+$$ X_j'(I-H)Y=  X_j' \hat{\beta}_0 + X_j'(I-H)Y $$
+Thus,
+
+$$ X_j' \hat{\beta}_0 = 0 $$ 
+
+considering non-trivial cases, we conclude $\hat{\beta}_0 = 0$ thus, proving that the intercept value will always be zero.
+
+
 
 14. For multiple regression with more than 2 predictors, say a full model given by `Y ~ X1 + X2 + ... Xp`   we create the added variable plot for variable `j` by regressing `Y` on all of the `X`'s except `Xj` to form `e_Y` and then regressing `Xj` on all of the other X's to form `e_X`.  Confirm that the slope in a manually constructed added variable plot for one of the predictors  in Ex. 10 is the same as the estimate from your model. 
+
+A) 
