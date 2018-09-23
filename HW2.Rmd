@@ -300,4 +300,24 @@ considering non-trivial cases, we conclude $\hat{\beta}_0 = 0$ thus, proving tha
 
 14. For multiple regression with more than 2 predictors, say a full model given by `Y ~ X1 + X2 + ... Xp`   we create the added variable plot for variable `j` by regressing `Y` on all of the `X`'s except `Xj` to form `e_Y` and then regressing `Xj` on all of the other X's to form `e_X`.  Confirm that the slope in a manually constructed added variable plot for one of the predictors  in Ex. 10 is the same as the estimate from your model. 
 
-A) 
+A) We will use the models developed in Q)10 to confirm on the slopes. 
+
+Let us take $X_j$ to be Change. 
+
+```{r}
+UN3_outliers_removed = UN3_outliers_removed[complete.cases(UN3_outliers_removed),]
+e_Y = residuals(lm(ModernC ~ sqrt(Pop) + log(PPgdp) + Frate + Fertility + Purban, data = UN3_outliers_removed ))
+e_X = residuals(lm(Change ~ sqrt(Pop) + log(PPgdp) + Frate + Fertility + Purban, data = UN3_outliers_removed))
+
+linearmodel.lm = lm(e_Y ~ e_X)
+
+coefficient_final_model = summary(test3.lm)$coefficients['Change',c('Estimate')]
+coefficient_temp_model = summary(linearmodel.lm)$coefficients['e_X',c('Estimate')]
+
+
+df_ = rbind(coefficient_final_model, coefficient_temp_model)
+
+kable(df_)
+```
+
+We see that the slope for the manually constructed AV plot (with the added variable being 'Change') is same as the slope of the final model generated in Q.10, Thus emperically proving the ask in the question.
